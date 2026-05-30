@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0d0f">
+<title>JP Listen</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Zen+Kaku+Gothic+New:wght@300;400;700&display=swap');
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #16161a;
+    --surface2: #1e1e24;
+    --border: #2a2a35;
+    --accent: #c8a96e;
+    --accent2: #7b9e87;
+    --ink: #e8e4dc;
+    --ink-mid: #9e9a92;
+    --ink-dim: #4a4844;
+    --red: #c46060;
+    --mono: 'DM Mono', monospace;
+    --jp: 'Zen Kaku Gothic New', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--mono);
+    overscroll-behavior: none;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+    min-height: 100dvh;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 18px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  header h1 {
+    font-family: var(--jp);
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+  }
+  header span {
+    font-size: 0.65rem;
+    color: var(--ink-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* ── Drop zone ── */
+  #dropzone {
+    margin: 20px;
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    flex-shrink: 0;
+  }
+  #dropzone.dragover { border-color: var(--accent); background: rgba(200,169,110,0.04); }
+  #dropzone .dz-icon { font-size: 2rem; margin-bottom: 8px; opacity: 0.4; }
+  #dropzone p { font-size: 0.72rem; color: var(--ink-mid); line-height: 1.6; }
+  #dropzone p strong { color: var(--ink); font-weight: 500; }
+  #fileInput { display: none; }
+
+  /* ── Now playing ── */
+  #nowPlaying {
+    margin: 0 20px;
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 16px;
+    display: none;
+    flex-shrink: 0;
+  }
+  #nowPlaying.visible { display: block; }
+
+  .np-filename {
+    font-size: 0.75rem;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 10px;
+    font-family: var(--jp);
+  }
+  .np-filename em {
+    font-style: normal;
+    color: var(--ink-dim);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    margin-right: 6px;
+  }
+
+  /* Waveform / progress */
+  .np-progress-wrap {
+    position: relative;
+    height: 36px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  #waveCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    opacity: 0.3;
+  }
+  #progressBar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.1s linear;
+    width: 0%;
+  }
+  #progressOverlay {
+    position: absolute;
+    inset: 0;
+  }
+
+  .np-times {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.62rem;
+    color: var(--ink-dim);
+    margin-bottom: 12px;
+  }
+
+  /* Controls */
+  .np-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 12px;
+  }
+  .ctrl-btn {
+    background: none;
+    border: none;
+    color: var(--ink-mid);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    transition: color 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+  }
+  .ctrl-btn:active { background: var(--surface2); }
+  .ctrl-btn.primary {
+    width: 52px;
+    height: 52px;
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 1.3rem;
+    border-radius: 50%;
+  }
+  .ctrl-btn.primary:active { opacity: 0.8; }
+  .ctrl-btn.active { color: var(--accent); }
+
+  /* Speed + loop row */
+  .np-options {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .speed-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--ink-mid);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .speed-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 500; }
+  .loop-btn {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--ink-dim);
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .loop-btn.active { border-color: var(--accent2); color: var(--accent2); }
+
+  /* ── Playlist ── */
+  #playlistWrap {
+    flex: 1;
+    overflow-y: auto;
+    margin: 12px 0 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  .playlist-header {
+    padding: 6px 20px;
+    font-size: 0.6rem;
+    color: var(--ink-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .playlist-header button {
+    background: none;
+    border: none;
+    color: var(--ink-dim);
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    cursor: pointer;
+    padding: 2px 6px;
+  }
+  .playlist-header button:active { color: var(--red); }
+
+  .track-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    gap: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+    position: relative;
+  }
+  .track-item:active { background: var(--surface); }
+  .track-item.playing { background: var(--surface); }
+  .track-item.playing::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+  }
+
+  .track-num {
+    font-size: 0.62rem;
+    color: var(--ink-dim);
+    width: 20px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .track-item.playing .track-num { color: var(--accent); }
+
+  .track-info { flex: 1; overflow: hidden; }
+  .track-name {
+    font-family: var(--jp);
+    font-size: 0.78rem;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .track-item.playing .track-name { color: var(--accent); }
+  .track-meta {
+    font-size: 0.6rem;
+    color: var(--ink-dim);
+    margin-top: 2px;
+  }
+  .track-listened {
+    font-size: 0.6rem;
+    color: var(--accent2);
+    flex-shrink: 0;
+  }
+
+  /* ── Footer / log ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .log-summary {
+    flex: 1;
+    font-size: 0.62rem;
+    color: var(--ink-dim);
+  }
+  .log-summary strong { color: var(--accent2); }
+  .export-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--ink-mid);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .export-btn:active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .export-btn.copied { background: var(--accent2); color: var(--bg); border-color: var(--accent2); }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    font-size: 0.7rem;
+    padding: 8px 16px;
+    border-radius: 20px;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 100;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Empty state */
+  #emptyPlaylist {
+    padding: 40px 20px;
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--ink-dim);
+    line-height: 2;
+  }
+
+  /* Scrollbar */
+  #playlistWrap::-webkit-scrollbar { width: 3px; }
+  #playlistWrap::-webkit-scrollbar-track { background: transparent; }
+  #playlistWrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>聴く</h1>
+  <span>JP Listen · Satellite</span>
+</header>
+
+<div id="dropzone">
+  <div class="dz-icon">🎧</div>
+  <p><strong>Tap to add audio files</strong><br>mp3 · m4a · wav · ogg · aac · flac</p>
+</div>
+<input type="file" id="fileInput" multiple accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac,.flac,.opus,.weba">
+
+<div id="nowPlaying">
+  <div class="np-filename"><em>#<span id="npIdx">1</span></em><span id="npName">—</span></div>
+  <div class="np-progress-wrap">
+    <canvas id="waveCanvas"></canvas>
+    <div id="progressBar"></div>
+    <div id="progressOverlay"></div>
+  </div>
+  <div class="np-times">
+    <span id="timeEl">0:00</span>
+    <span id="durEl">0:00</span>
+  </div>
+  <div class="np-controls">
+    <button class="ctrl-btn" id="prevBtn" title="Previous" onclick="prevTrack()">⏮</button>
+    <button class="ctrl-btn" id="skipBackBtn" title="-10s" onclick="skipBy(-10)">↩</button>
+    <button class="ctrl-btn primary" id="playBtn" onclick="togglePlay()">▶</button>
+    <button class="ctrl-btn" id="skipFwdBtn" title="+10s" onclick="skipBy(10)">↪</button>
+    <button class="ctrl-btn" id="nextBtn" title="Next" onclick="nextTrack()">⏭</button>
+  </div>
+  <div class="np-options">
+    <button class="speed-btn" data-r="0.6" onclick="setSpeed(0.6)">0.6×</button>
+    <button class="speed-btn" data-r="0.75" onclick="setSpeed(0.75)">0.75×</button>
+    <button class="speed-btn active" data-r="1" onclick="setSpeed(1)">1×</button>
+    <button class="speed-btn" data-r="1.25" onclick="setSpeed(1.25)">1.25×</button>
+    <button class="speed-btn" data-r="1.5" onclick="setSpeed(1.5)">1.5×</button>
+    <button class="loop-btn" id="loopBtn" onclick="toggleLoop()">↻ loop</button>
+  </div>
+</div>
+
+<div id="playlistWrap">
+  <div class="playlist-header">
+    <span id="plCount">0 files</span>
+    <button onclick="clearPlaylist()">clear</button>
+  </div>
+  <div id="playlist">
+    <div id="emptyPlaylist">No files loaded.<br>Tap the area above to add audio.</div>
+  </div>
+</div>
+
+<footer>
+  <div class="log-summary" id="logSummary">Session: <strong>0 min</strong> listened</div>
+  <button class="export-btn" id="exportBtn" onclick="exportLog()">Export log</button>
+</footer>
+
+<div id="toast"></div>
+
+<audio id="audioEl"></audio>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const audio = document.getElementById('audioEl');
+let tracks = [];       // { name, url, duration, file }
+let currentIdx = -1;
+let isLoop = false;
+let sessionLog = loadSessionLog();  // persisted across reloads
+let _trackStart = null;  // timestamp when current track started playing
+let _trackAccum = 0;     // seconds accumulated for current track in this play segment
+
+// ── Persist session log ────────────────────────────────────────────────────
+function loadSessionLog() {
+  try { return JSON.parse(localStorage.getItem('jpsat_log') || '[]'); } catch { return []; }
+}
+function saveSessionLog() {
+  localStorage.setItem('jpsat_log', JSON.stringify(sessionLog));
+}
+
+// ── File loading ───────────────────────────────────────────────────────────
+document.getElementById('dropzone').addEventListener('click', () => document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', e => loadFiles([...e.target.files]));
+
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('dragover');
+  loadFiles([...e.dataTransfer.files].filter(f => f.type.startsWith('audio/') || /\.(mp3|m4a|wav|ogg|aac|flac|opus|weba)$/i.test(f.name)));
+});
+
+function loadFiles(files) {
+  if (!files.length) return;
+  const audioExts = /\.(mp3|m4a|wav|ogg|aac|flac|opus|weba|mp4)$/i;
+  files = files.filter(f => f.type.startsWith('audio/') || audioExts.test(f.name));
+  files.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+  files.forEach(f => {
+    if (tracks.find(t => t.name === f.name)) return; // dedupe
+    tracks.push({ name: f.name, url: URL.createObjectURL(f), duration: 0, file: f });
+  });
+  renderPlaylist();
+  if (currentIdx < 0 && tracks.length) loadTrack(0);
+  toast(`${files.length} file${files.length>1?'s':''} added`);
+}
+
+// ── Playlist render ────────────────────────────────────────────────────────
+function renderPlaylist() {
+  const el = document.getElementById('playlist');
+  const empty = document.getElementById('emptyPlaylist');
+  document.getElementById('plCount').textContent = `${tracks.length} file${tracks.length!==1?'s':''}`;
+  if (!tracks.length) { empty.style.display = ''; el.innerHTML = ''; el.appendChild(empty); return; }
+  empty.style.display = 'none';
+  el.innerHTML = tracks.map((t, i) => {
+    const mins = logMinutesForFile(t.name);
+    const minsStr = mins > 0 ? `${mins}m` : '';
+    return `<div class="track-item${i===currentIdx?' playing':''}" onclick="loadTrack(${i})">
+      <span class="track-num">${i+1}</span>
+      <div class="track-info">
+        <div class="track-name">${escHtml(cleanName(t.name))}</div>
+        <div class="track-meta">${fmtTime(t.duration)}</div>
+      </div>
+      ${minsStr ? `<span class="track-listened">${minsStr}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function cleanName(n) { return n.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '); }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function logMinutesForFile(name) {
+  const total = sessionLog.filter(e => e.filename === name).reduce((s, e) => s + (e.seconds || 0), 0);
+  return Math.round(total / 60);
+}
+
+// ── Track loading ──────────────────────────────────────────────────────────
+function loadTrack(idx, autoplay = true) {
+  flushCurrentTrack();
+  if (idx < 0 || idx >= tracks.length) return;
+  currentIdx = idx;
+  const t = tracks[idx];
+  audio.src = t.url;
+  audio.playbackRate = currentSpeed();
+  document.getElementById('npName').textContent = cleanName(t.name);
+  document.getElementById('npIdx').textContent = idx + 1;
+  document.getElementById('nowPlaying').classList.add('visible');
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('timeEl').textContent = '0:00';
+  document.getElementById('durEl').textContent = fmtTime(t.duration);
+  renderPlaylist();
+  if (autoplay) { audio.play(); _trackStart = Date.now(); }
+  audio.onloadedmetadata = () => {
+    t.duration = audio.duration;
+    document.getElementById('durEl').textContent = fmtTime(audio.duration);
+    renderPlaylist();
+    renderWaveform();
+  };
+  // scroll into view
+  const items = document.querySelectorAll('.track-item');
+  if (items[idx]) items[idx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+// ── Playback ───────────────────────────────────────────────────────────────
+function togglePlay() {
+  if (!tracks.length) return;
+  if (audio.paused) {
+    audio.play();
+    _trackStart = Date.now();
+  } else {
+    flushCurrentTrack();
+    audio.pause();
+  }
+}
+
+function prevTrack() {
+  if (audio.currentTime > 3) { audio.currentTime = 0; return; }
+  loadTrack(currentIdx > 0 ? currentIdx - 1 : tracks.length - 1);
+}
+function nextTrack() { loadTrack((currentIdx + 1) % tracks.length); }
+function skipBy(s) { audio.currentTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + s)); }
+
+function clearPlaylist() {
+  if (!tracks.length) return;
+  if (!confirm('Clear all files from playlist?')) return;
+  flushCurrentTrack();
+  tracks.forEach(t => URL.revokeObjectURL(t.url));
+  tracks = [];
+  currentIdx = -1;
+  audio.pause();
+  audio.src = '';
+  document.getElementById('nowPlaying').classList.remove('visible');
+  renderPlaylist();
+}
+
+// ── Speed ──────────────────────────────────────────────────────────────────
+function currentSpeed() {
+  const active = document.querySelector('.speed-btn.active');
+  return active ? parseFloat(active.dataset.r) : 1;
+}
+function setSpeed(r) {
+  document.querySelectorAll('.speed-btn').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.r) === r));
+  audio.playbackRate = r;
+}
+
+// ── Loop ───────────────────────────────────────────────────────────────────
+function toggleLoop() {
+  isLoop = !isLoop;
+  document.getElementById('loopBtn').classList.toggle('active', isLoop);
+}
+
+// ── Audio events ───────────────────────────────────────────────────────────
+audio.addEventListener('timeupdate', () => {
+  const cur = audio.currentTime, dur = audio.duration || 1;
+  document.getElementById('timeEl').textContent = fmtTime(cur);
+  document.getElementById('progressBar').style.width = (cur / dur * 100) + '%';
+});
+audio.addEventListener('play', () => { document.getElementById('playBtn').textContent = '⏸'; });
+audio.addEventListener('pause', () => { document.getElementById('playBtn').textContent = '▶'; });
+audio.addEventListener('ended', () => {
+  flushCurrentTrack();
+  if (isLoop) { audio.currentTime = 0; audio.play(); _trackStart = Date.now(); }
+  else if (currentIdx < tracks.length - 1) nextTrack();
+  else { document.getElementById('playBtn').textContent = '▶'; }
+});
+
+// ── Progress click ─────────────────────────────────────────────────────────
+document.getElementById('progressOverlay').addEventListener('click', e => {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  audio.currentTime = pct * (audio.duration || 0);
+});
+
+// ── Waveform (fake bars, visually consistent) ──────────────────────────────
+function renderWaveform() {
+  const canvas = document.getElementById('waveCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth * devicePixelRatio;
+  const H = canvas.offsetHeight * devicePixelRatio;
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+  const bars = Math.floor(W / (3 * devicePixelRatio));
+  // Seed bars from filename for consistency
+  const seed = (tracks[currentIdx]?.name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const rng = (i) => { let x = Math.sin(seed + i * 9.301) * 43758.5; return x - Math.floor(x); };
+  ctx.fillStyle = '#c8a96e';
+  for (let i = 0; i < bars; i++) {
+    const h = (0.15 + rng(i) * 0.7) * H;
+    const x = i * 3 * devicePixelRatio;
+    ctx.fillRect(x, (H - h) / 2, 2 * devicePixelRatio, h);
+  }
+}
+
+// ── Listen log ─────────────────────────────────────────────────────────────
+function flushCurrentTrack() {
+  if (_trackStart === null) return;
+  const elapsed = (Date.now() - _trackStart) / 1000;
+  _trackStart = null;
+  if (elapsed < 2) return; // ignore tiny blips
+  const name = tracks[currentIdx]?.name;
+  if (!name) return;
+  const today = new Date().toISOString().slice(0, 10);
+  // Merge into existing entry for same file+date
+  const existing = sessionLog.find(e => e.filename === name && e.date === today);
+  if (existing) existing.seconds = Math.round((existing.seconds || 0) + elapsed);
+  else sessionLog.push({ date: today, filename: name, seconds: Math.round(elapsed) });
+  saveSessionLog();
+  updateLogSummary();
+}
+
+function updateLogSummary() {
+  const today = new Date().toISOString().slice(0, 10);
+  const todaySecs = sessionLog.filter(e => e.date === today).reduce((s, e) => s + (e.seconds || 0), 0);
+  const files = new Set(sessionLog.filter(e => e.date === today).map(e => e.filename)).size;
+  document.getElementById('logSummary').innerHTML =
+    `Today: <strong>${Math.round(todaySecs/60)} min</strong> · ${files} file${files!==1?'s':''}`;
+}
+
+// ── Export ─────────────────────────────────────────────────────────────────
+function exportLog() {
+  if (!sessionLog.length) { toast('No log data yet'); return; }
+  const json = JSON.stringify(sessionLog, null, 2);
+  try {
+    navigator.clipboard.writeText(json).then(() => {
+      const btn = document.getElementById('exportBtn');
+      btn.textContent = 'Copied ✓';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Export log'; btn.classList.remove('copied'); }, 2000);
+      toast('Log copied to clipboard');
+    });
+  } catch {
+    // Fallback: open in new tab
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `listen-log-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  }
+}
+
+// ── Util ───────────────────────────────────────────────────────────────────
+function fmtTime(s) {
+  if (!s || isNaN(s)) return '0:00';
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function toast(msg, dur = 2000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+updateLogSummary();
+renderPlaylist();
+
+// Flush on page hide (phone locks, switches apps)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) flushCurrentTrack();
+  else if (!audio.paused) _trackStart = Date.now();
+});
+</script>
+</body>
+</html>
