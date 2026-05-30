@@ -415,9 +415,16 @@
   </div>
 </div>
 
+<div id="gistSettingsPanel" style="display:none;padding:12px 20px;background:var(--surface);border-top:1px solid var(--border)">
+  <div style="font-size:0.62rem;color:var(--ink-mid);margin-bottom:8px">GitHub Gist sync — stored on this device only</div>
+  <input id="gistIdInput" placeholder="Gist ID" style="width:100%;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;font-family:var(--mono);font-size:0.72rem;color:var(--ink);margin-bottom:6px">
+  <input id="gistTokenInput" type="password" placeholder="GitHub token (gist scope)" style="width:100%;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;font-family:var(--mono);font-size:0.72rem;color:var(--ink);margin-bottom:8px">
+  <button onclick="saveGistSettings()" style="background:var(--accent);color:var(--bg);border:none;padding:7px 16px;border-radius:5px;font-family:var(--mono);font-size:0.7rem;cursor:pointer">Save &amp; Sync</button>
+</div>
+
 <footer>
-  <div class="log-summary" id="logSummary">Session: <strong>0 min</strong> listened</div>
-  <button class="export-btn" id="exportBtn" onclick="exportLog()">Export log</button>
+  <div class="log-summary" id="logSummary">Today: <strong>0 min</strong> · 0 files</div>
+  <button class="export-btn" onclick="showGistSettings()">⚙ Sync</button>
 </footer>
 
 <div id="toast"></div>
@@ -440,6 +447,60 @@ function loadSessionLog() {
 }
 function saveSessionLog() {
   localStorage.setItem('jpsat_log', JSON.stringify(sessionLog));
+}
+
+// ── Gist sync ──────────────────────────────────────────────────────────────
+function gistSettings() {
+  return {
+    id:    localStorage.getItem('jpsat_gist_id') || '',
+    token: localStorage.getItem('jpsat_gist_token') || ''
+  };
+}
+
+function showGistSettings() {
+  const panel = document.getElementById('gistSettingsPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  if (panel.style.display === 'block') {
+    const s = gistSettings();
+    document.getElementById('gistIdInput').value    = s.id;
+    document.getElementById('gistTokenInput').value = s.token;
+  }
+}
+
+function saveGistSettings() {
+  const id    = document.getElementById('gistIdInput').value.trim();
+  const token = document.getElementById('gistTokenInput').value.trim();
+  if (!id || !token) { toast('Both fields required'); return; }
+  localStorage.setItem('jpsat_gist_id', id);
+  localStorage.setItem('jpsat_gist_token', token);
+  document.getElementById('gistSettingsPanel').style.display = 'none';
+  toast('Saved — syncing…');
+  pushToGist();
+}
+
+let _gistPushPending = false;
+async function pushToGist() {
+  const s = gistSettings();
+  if (!s.id || !s.token || !sessionLog.length) return;
+  if (_gistPushPending) return;
+  _gistPushPending = true;
+  try {
+    const res = await fetch(`https://api.github.com/gists/${s.id}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `token ${s.token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify({ files: { 'listen-log.json': { content: JSON.stringify(sessionLog, null, 2) } } })
+    });
+    if (res.ok) toast('Synced ✓');
+    else toast('Sync error ' + res.status);
+  } catch(e) {
+    toast('Sync failed');
+  } finally {
+    _gistPushPending = false;
+  }
 }
 
 // ── File loading ───────────────────────────────────────────────────────────
@@ -630,6 +691,7 @@ function flushCurrentTrack() {
   else sessionLog.push({ date: today, filename: name, seconds: Math.round(elapsed) });
   saveSessionLog();
   updateLogSummary();
+  pushToGist();
 }
 
 function updateLogSummary() {
