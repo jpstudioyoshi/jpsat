@@ -363,6 +363,7 @@
   #playlistWrap::-webkit-scrollbar-track { background: transparent; }
   #playlistWrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 </style>
+<script src="config.js"></script>
 </head>
 <body>
 
@@ -450,13 +451,12 @@ function saveSessionLog() {
 }
 
 // ── Gist sync ──────────────────────────────────────────────────────────────
-const _GIST_ID    = '351c9b49c2640bdfeb891c6e0ceeeb37';
-const _GIST_TOKEN = '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';
+const _GIST_ID = '351c9b49c2640bdfeb891c6e0ceeeb37';
 
 function gistSettings() {
   return {
-    id:    localStorage.getItem('jpsat_gist_id') || _GIST_ID,
-    token: localStorage.getItem('jpsat_gist_token') || _GIST_TOKEN
+    id:    _GIST_ID,
+    token: window.JPSAT_TOKEN || localStorage.getItem('jpsat_gist_token') || ''
   };
 }
 
