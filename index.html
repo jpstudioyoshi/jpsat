@@ -55,7 +55,7 @@
   }
   header h1 {
     font-family: var(--jp);
-    font-size: 1.1rem;
+    font-size: 1.3rem;
     font-weight: 700;
     letter-spacing: 0.05em;
     color: var(--accent);
@@ -165,16 +165,16 @@
     cursor: pointer;
     padding: 8px;
     border-radius: 50%;
-    font-size: 1.1rem;
+    font-size: 1.3rem;
     transition: color 0.15s, background 0.15s;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 52px;
+    height: 52px;
   }
   .ctrl-btn:active { background: var(--surface2); }
-  .ctrl-btn.primary { font-size: 2rem; color: #4caf50; width: 64px; height: 64px; background: none; border-radius: 50%; }
+  .ctrl-btn.primary { font-size: 2.5rem; color: #4caf50; width: 80px; height: 80px; background: none; border-radius: 50%; }
 
 
 
@@ -402,10 +402,13 @@
   </div>
 </div>
 
+<div id="addClearRow" style="display:flex;gap:12px;padding:16px 20px">
+  <button onclick="document.getElementById('fileInput').click()" style="flex:1;padding:18px;font-size:1.1rem;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--ink);cursor:pointer">＋ Add Audio</button>
+  <button onclick="clearPlaylist()" style="flex:1;padding:18px;font-size:1.1rem;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--ink);cursor:pointer">✕ Clear</button>
+</div>
 <div id="playlistWrap">
   <div class="playlist-header">
     <span id="plCount">0 files</span>
-    <button onclick="clearPlaylist()" style="font-size:1rem;color:var(--ink);padding:6px 16px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer">Clear</button>
   </div>
   <div id="playlist">
     <div id="emptyPlaylist">No files loaded.<br>Tap the area above to add audio.</div>
