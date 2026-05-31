@@ -161,20 +161,20 @@
   .ctrl-btn {
     background: none;
     border: none;
-    color: var(--ink-mid);
+    color: #e8e4dc;
     cursor: pointer;
     padding: 8px;
     border-radius: 50%;
-    font-size: 1.3rem;
+    font-size: 2rem;
     transition: color 0.15s, background 0.15s;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 52px;
-    height: 52px;
+    width: 72px;
+    height: 72px;
   }
   .ctrl-btn:active { background: var(--surface2); }
-  .ctrl-btn.primary { font-size: 2.5rem; color: #4caf50; width: 80px; height: 80px; background: none; border-radius: 50%; }
+  .ctrl-btn.primary { font-size: 3.5rem; color: #4caf50; width: 100px; height: 100px; background: none; border-radius: 50%; }
 
 
 
@@ -195,9 +195,9 @@
   .speed-btn {
     background: var(--surface2);
     border: 1px solid var(--border);
-    color: var(--ink-mid);
+    color: #e8e4dc;
     font-family: var(--mono);
-    font-size: 0.85rem;
+    font-size: 1rem;
     padding: 4px 8px;
     border-radius: 4px;
     cursor: pointer;
@@ -317,9 +317,9 @@
   .export-btn {
     background: var(--surface2);
     border: 1px solid var(--border);
-    color: var(--ink-mid);
+    color: #e8e4dc;
     font-family: var(--mono);
-    font-size: 0.85rem;
+    font-size: 1rem;
     padding: 7px 14px;
     border-radius: 6px;
     cursor: pointer;
@@ -506,7 +506,7 @@ async function pushToGist() {
 }
 
 // ── File loading ───────────────────────────────────────────────────────────
-document.getElementById('dropzone').addEventListener('click', () => document.getElementById('fileInput').click());
+// dropzone click removed
 document.getElementById('fileInput').addEventListener('change', e => loadFiles([...e.target.files]));
 
 const dz = document.getElementById('dropzone');
