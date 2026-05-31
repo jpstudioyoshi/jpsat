@@ -174,14 +174,14 @@
     height: 40px;
   }
   .ctrl-btn:active { background: var(--surface2); }
-  .ctrl-btn.primary {
-    width: 52px;
-    height: 52px;
-    background: var(--accent);
-    color: var(--bg);
-    font-size: 1.3rem;
-    border-radius: 50%;
-  }
+  .ctrl-btn.primary { font-size: 2rem; color: #4caf50; width: 64px; height: 64px; background: none; border-radius: 50%; }
+
+
+
+
+
+
+
   .ctrl-btn.primary:active { opacity: 0.8; }
   .ctrl-btn.active { color: var(--accent); }
 
@@ -373,8 +373,7 @@
 </header>
 
 <div id="dropzone">
-  <div class="dz-icon">🎧</div>
-  <p><strong>Tap to add audio files</strong><br>mp3 · m4a · wav · ogg · aac · flac</p>
+  <div class="dz-icon">🎧</div><p><strong>Add audio files</strong></p>
 </div>
 <input type="file" id="fileInput" multiple accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac,.flac,.opus,.weba">
 
@@ -397,11 +396,8 @@
     <button class="ctrl-btn" id="nextBtn" title="Next" onclick="nextTrack()">⏭</button>
   </div>
   <div class="np-options">
-    <button class="speed-btn" data-r="0.6" onclick="setSpeed(0.6)">0.6×</button>
-    <button class="speed-btn" data-r="0.75" onclick="setSpeed(0.75)">0.75×</button>
+    <button class="speed-btn" data-r="0.9" onclick="setSpeed(0.9)">0.9×</button>
     <button class="speed-btn active" data-r="1" onclick="setSpeed(1)">1×</button>
-    <button class="speed-btn" data-r="1.25" onclick="setSpeed(1.25)">1.25×</button>
-    <button class="speed-btn" data-r="1.5" onclick="setSpeed(1.5)">1.5×</button>
     <button class="loop-btn" id="loopBtn" onclick="toggleLoop()">↻ loop</button>
   </div>
 </div>
@@ -409,7 +405,7 @@
 <div id="playlistWrap">
   <div class="playlist-header">
     <span id="plCount">0 files</span>
-    <button onclick="clearPlaylist()">clear</button>
+    <button onclick="clearPlaylist()" style="font-size:1rem;color:var(--ink);padding:6px 16px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer">Clear</button>
   </div>
   <div id="playlist">
     <div id="emptyPlaylist">No files loaded.<br>Tap the area above to add audio.</div>
